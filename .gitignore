@@ -11,4 +11,8 @@
 *.lai
 *.la
 *.a
+<<<<<<< HEAD
 /Debug
+=======
+.cproject
+>>>>>>> branch 'development' of https://github.com/if12b088/TWMailerClient.git
