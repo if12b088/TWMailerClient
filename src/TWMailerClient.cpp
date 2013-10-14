@@ -60,13 +60,13 @@ std::string read(){
 
 	std::string msg;
 	char user[9];
-	char nr[9];
+	char nr[20];
 
 	std::cout << "Username: ";
 	fgets(user, 9, stdin);
 	std::cout << "Message-Number: ";
 	// size??
-	fgets(nr, 9, stdin);
+	fgets(nr, 20, stdin);
 
 	msg.append("READ\n");
 	msg.append(user);
@@ -79,13 +79,13 @@ std::string del(){
 
 	std::string msg;
 	char user[9];
-	char nr[9];
+	char nr[20];
 
 	std::cout << "Username: ";
 	fgets(user, 9, stdin);
 	std::cout << "Message-Number: ";
 	// size??
-	fgets(nr, 9, stdin);
+	fgets(nr, 20, stdin);
 
 	msg.append("DEL\n");
 	msg.append(user);
