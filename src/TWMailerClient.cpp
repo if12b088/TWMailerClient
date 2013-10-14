@@ -7,12 +7,97 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
+#include <iostream>
 #define BUF 1024
-#define PORT 6543
+#define PORT 6000
+
+
+std::string send(){
+
+	printf("send-befehl:\n");
+
+	std::string msg;
+	char from[9];
+	char to[9];
+	char subject[81];
+	char text[81];
+
+	std::cout << "From: ";
+	fgets(from, 9, stdin);
+	std::cout << "To: ";
+	fgets(to, 9, stdin);
+	std::cout << "Subject: ";
+	fgets(subject, 81, stdin);
+	std::cout << "Text: ";
+	//size??
+	fgets(text, 81, stdin);
+
+	msg.append("SEND\n");
+	msg.append(from);
+	msg.append(to);
+	msg.append(subject);
+	msg.append(text);
+
+	return msg;
+}
+std::string list(){
+	printf("list-befehl:\n");
+
+	std::string msg;
+		char user[9];
+
+		std::cout << "Username: ";
+		fgets(user, 9, stdin);
+
+		msg.append("LIST\n");
+		msg.append(user);
+
+		return msg;
+}
+std::string read(){
+	printf("read-befehl\n");
+
+	std::string msg;
+	char user[9];
+	char nr[9];
+
+	std::cout << "Username: ";
+	fgets(user, 9, stdin);
+	std::cout << "Message-Number: ";
+	// size??
+	fgets(nr, 9, stdin);
+
+	msg.append("READ\n");
+	msg.append(user);
+	msg.append(nr);
+
+	return msg;
+}
+std::string del(){
+	printf("del-befehl\n");
+
+	std::string msg;
+	char user[9];
+	char nr[9];
+
+	std::cout << "Username: ";
+	fgets(user, 9, stdin);
+	std::cout << "Message-Number: ";
+	// size??
+	fgets(nr, 9, stdin);
+
+	msg.append("DEL\n");
+	msg.append(user);
+	msg.append(nr);
+
+	return msg;
+}
 
 int main(int argc, char **argv) {
 	int create_socket;
 	char buffer[BUF];
+	char * msgBuffer;
 	struct sockaddr_in address;
 	int size;
 
@@ -48,8 +133,48 @@ int main(int argc, char **argv) {
 	do {
 		printf("Send message: ");
 		fgets(buffer, BUF, stdin);
-		send(create_socket, buffer, strlen(buffer), 0);
-	} while (strcmp(buffer, "quit\n") != 0);
+		//printf("%d", strcmp(buffer, "SEND\n"));
+
+		if(strcmp(buffer, "SEND\n") == 0){
+			std::string msg = send();
+			std::cout << msg << std::endl;
+
+			msgBuffer = new char[msg.size() + 1];
+			std::copy(msg.begin(), msg.end(), msgBuffer);
+			msgBuffer[msg.size()] = '\0';
+		}
+
+		if(strcmp(buffer, "LIST\n") == 0){
+			std::string msg = list();
+			std::cout << msg << std::endl;
+
+			msgBuffer = new char[msg.size() + 1];
+			std::copy(msg.begin(), msg.end(), msgBuffer);
+			msgBuffer[msg.size()] = '\0';
+		}
+
+		if(strcmp(buffer, "READ\n") == 0){
+			std::string msg = read();
+			std::cout << msg << std::endl;
+
+			msgBuffer = new char[msg.size() + 1];
+			std::copy(msg.begin(), msg.end(), msgBuffer);
+			msgBuffer[msg.size()] = '\0';
+		}
+
+		if(strcmp(buffer, "DEL\n") == 0){
+			std::string msg = del();
+			std::cout << msg << std::endl;
+
+			msgBuffer = new char[msg.size() + 1];
+			std::copy(msg.begin(), msg.end(), msgBuffer);
+			msgBuffer[msg.size()] = '\0';
+		}
+		if (send(create_socket, msgBuffer, strlen(buffer), 0) == -1){
+			perror("Send error");
+			return EXIT_FAILURE;
+		}
+	} while (strcmp(buffer, "QUIT\n") != 0);
 	close(create_socket);
 	return EXIT_SUCCESS;
 }
