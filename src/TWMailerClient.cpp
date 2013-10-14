@@ -18,20 +18,20 @@ std::string send(){
 	printf("send-befehl:\n");
 
 	std::string msg;
-	char from[9];
-	char to[9];
-	char subject[81];
-	char text[81];
+	char from[10];
+	char to[10];
+	char subject[82];
+	char text[82];
 
 	std::cout << "From: ";
-	fgets(from, 9, stdin);
+	fgets(from, sizeof(from), stdin);
 	std::cout << "To: ";
-	fgets(to, 9, stdin);
+	fgets(to, sizeof(to), stdin);
 	std::cout << "Subject: ";
-	fgets(subject, 81, stdin);
+	fgets(subject, sizeof(subject), stdin);
 	std::cout << "Text: ";
 	//size??
-	fgets(text, 81, stdin);
+	fgets(text, sizeof(text), stdin);
 
 	msg.append("SEND\n");
 	msg.append(from);
@@ -131,16 +131,17 @@ int main(int argc, char **argv) {
 	}
 
 	do {
-		printf("Send message: ");
+		printf("Command: ");
 		fgets(buffer, BUF, stdin);
 		//printf("%d", strcmp(buffer, "SEND\n"));
 
 		if(strcmp(buffer, "SEND\n") == 0){
 			std::string msg = send();
-			std::cout << msg << std::endl;
+			//std::cout << msg << std::endl;
 
 			msgBuffer = new char[msg.size() + 1];
 			std::copy(msg.begin(), msg.end(), msgBuffer);
+			//printf("%s", msgBuffer);
 			msgBuffer[msg.size()] = '\0';
 		}
 
@@ -170,10 +171,17 @@ int main(int argc, char **argv) {
 			std::copy(msg.begin(), msg.end(), msgBuffer);
 			msgBuffer[msg.size()] = '\0';
 		}
-		if (send(create_socket, msgBuffer, strlen(buffer), 0) == -1){
+		if (send(create_socket, msgBuffer, strlen(msgBuffer), 0) == -1){
 			perror("Send error");
 			return EXIT_FAILURE;
 		}
+
+		size = recv(create_socket, buffer, BUF - 1, 0);
+		if(size > 0){
+			buffer[size] = '\0';
+			printf("%s", buffer);
+		}
+
 	} while (strcmp(buffer, "QUIT\n") != 0);
 	close(create_socket);
 	return EXIT_SUCCESS;
