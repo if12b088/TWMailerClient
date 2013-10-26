@@ -8,14 +8,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <sstream>
 #include <iostream>
 #define BUF 1024
 #define PORT 6000
 
-
-std::string send(){
-
-	printf("send-befehl:\n");
+std::string send() {
 
 	std::string msg;
 	char from[10];
@@ -41,22 +39,20 @@ std::string send(){
 
 	return msg;
 }
-std::string list(){
-	printf("list-befehl:\n");
+std::string list() {
 
 	std::string msg;
-		char user[9];
+	char user[9];
 
-		std::cout << "Username: ";
-		fgets(user, 9, stdin);
+	std::cout << "Username: ";
+	fgets(user, 9, stdin);
 
-		msg.append("LIST\n");
-		msg.append(user);
+	msg.append("LIST\n");
+	msg.append(user);
 
-		return msg;
+	return msg;
 }
-std::string read(){
-	printf("read-befehl\n");
+std::string read() {
 
 	std::string msg;
 	char user[9];
@@ -74,8 +70,7 @@ std::string read(){
 
 	return msg;
 }
-std::string del(){
-	printf("del-befehl\n");
+std::string del() {
 
 	std::string msg;
 	char user[9];
@@ -97,9 +92,9 @@ std::string del(){
 int main(int argc, char **argv) {
 	int create_socket;
 	char buffer[BUF];
-	char * msgBuffer;
 	struct sockaddr_in address;
 	int size;
+	std::stringstream msg;
 
 	if (argc < 2) {
 		printf("Usage: %s ServerAdresse\n", argv[0]);
@@ -133,53 +128,41 @@ int main(int argc, char **argv) {
 	do {
 		printf("Command: ");
 		fgets(buffer, BUF, stdin);
-		//printf("%d", strcmp(buffer, "SEND\n"));
+		//buffer[sizeof(buffer)] = '\0';
+		if (strcmp(buffer, "QUIT\n") != 0) {
+			if (strcmp(buffer, "SEND\n") == 0) {
+				msg << send();
+			}
 
-		if(strcmp(buffer, "SEND\n") == 0){
-			std::string msg = send();
-			//std::cout << msg << std::endl;
+			if (strcmp(buffer, "LIST\n") == 0) {
+				msg << list();
+			}
 
-			msgBuffer = new char[msg.size() + 1];
-			std::copy(msg.begin(), msg.end(), msgBuffer);
-			//printf("%s", msgBuffer);
-			msgBuffer[msg.size()] = '\0';
-		}
+			if (strcmp(buffer, "READ\n") == 0) {
+				msg << read();
+			}
 
-		if(strcmp(buffer, "LIST\n") == 0){
-			std::string msg = list();
-			std::cout << msg << std::endl;
+			if (strcmp(buffer, "DEL\n") == 0) {
+				std::string msg = del();
+				std::cout << msg << std::endl;
 
-			msgBuffer = new char[msg.size() + 1];
-			std::copy(msg.begin(), msg.end(), msgBuffer);
-			msgBuffer[msg.size()] = '\0';
-		}
+			}
 
-		if(strcmp(buffer, "READ\n") == 0){
-			std::string msg = read();
-			std::cout << msg << std::endl;
+#ifdef _DEBUG
+				std::cout << msg.str();
+#endif
 
-			msgBuffer = new char[msg.size() + 1];
-			std::copy(msg.begin(), msg.end(), msgBuffer);
-			msgBuffer[msg.size()] = '\0';
-		}
+			if (send(create_socket, msg.str().c_str(), msg.str().size(), 0)
+					== -1) {
+				perror("Send error");
+				return EXIT_FAILURE;
+			}
 
-		if(strcmp(buffer, "DEL\n") == 0){
-			std::string msg = del();
-			std::cout << msg << std::endl;
-
-			msgBuffer = new char[msg.size() + 1];
-			std::copy(msg.begin(), msg.end(), msgBuffer);
-			msgBuffer[msg.size()] = '\0';
-		}
-		if (send(create_socket, msgBuffer, strlen(msgBuffer), 0) == -1){
-			perror("Send error");
-			return EXIT_FAILURE;
-		}
-
-		size = recv(create_socket, buffer, BUF - 1, 0);
-		if(size > 0){
-			buffer[size] = '\0';
-			printf("%s", buffer);
+			size = recv(create_socket, buffer, BUF - 1, 0);
+			if (size > 0) {
+				buffer[size] = '\0';
+				printf("%s", buffer);
+			}
 		}
 
 	} while (strcmp(buffer, "QUIT\n") != 0);
