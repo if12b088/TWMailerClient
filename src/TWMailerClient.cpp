@@ -46,7 +46,7 @@ std::string send() {
 			if (toTemp != "") {
 				to.append(toTemp);
 				to.append(";");
-			}
+ 			}
 
 		}
 	} while (toTemp != "");
@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
 	std::string command;
 	struct sockaddr_in address;
 	int size;
-	std::stringstream msg;
+	std::string msg;
 
 	if (argc < 2) {
 		printf("Usage: %s ServerAdresse\n", argv[0]);
@@ -213,19 +213,20 @@ int main(int argc, char **argv) {
 	do {
 		command = "";
 		std::cout << "Command: ";
+		msg = "";
 		getline(std::cin, command);
 
 		if (command != "q") {
 			if (command == "s") {
-				msg << send();
+				msg = send();
 			}
 
 			if (command == "l") {
-				msg << list();
+				msg = list();
 			}
 
 			if (command == "r") {
-				msg << read();
+				msg = read();
 			}
 
 			if (command == "d") {
@@ -233,10 +234,10 @@ int main(int argc, char **argv) {
 			}
 
 #ifdef _DEBUG
-			std::cout << msg.str();
+			std::cout << msg;
 #endif
 
-			if (send(create_socket, msg.str().c_str(), msg.str().size(), 0)
+			if (send(create_socket, msg.c_str(), msg.length(), 0)
 					== -1) {
 				perror("Send error");
 				return EXIT_FAILURE;
