@@ -16,82 +16,167 @@
 std::string send() {
 
 	std::string msg;
-	char from[10];
-	char to[10];
-	char subject[82];
-	char text[82];
 
-	std::cout << "From: ";
-	fgets(from, sizeof(from), stdin);
-	std::cout << "To: ";
-	fgets(to, sizeof(to), stdin);
-	std::cout << "Subject: ";
-	fgets(subject, sizeof(subject), stdin);
-	std::cout << "Text: ";
-	//size??
-	fgets(text, sizeof(text), stdin);
+	std::string from;
+	std::string to;
+	std::string toTemp;
+	std::string subject;
+	std::string text;
+	std::string textTemp;
+	//FROM
+	do {
+		from = "";
+		std::cout << "From (max 8 characters): ";
+		getline(std::cin, from);
+
+		if (from.length() > 8) {
+			std::cout << "max 8 characters, please enter an other sender!\n";
+		}
+	} while (from.length() > 8);
+
+	//TO
+	do {
+
+		toTemp = "";
+		std::cout << "To (max 8 characters, press ENTER to end): ";
+		getline(std::cin, toTemp);
+		if (toTemp.length() > 8) {
+			std::cout << "max 8 characters, please enter an other recipient!\n";
+		} else {
+			if (toTemp != "") {
+				to.append(toTemp);
+				to.append(";");
+			}
+
+		}
+	} while (toTemp != "");
+
+	// SUBJECT
+	do {
+		std::cout << "Subject (max 80): ";
+		getline(std::cin, subject);
+		if (subject.length() > 80) {
+			std::cout << "Subject is too long, max 80 characters!\n";
+		}
+	} while (subject.length() > 80);
+
+	//TEXT
+	std::cout << "Text (enter \". ENTER\" in a new line to end): ";
+	do {
+		textTemp = "";
+		getline(std::cin, textTemp);
+		text.append(textTemp);
+		text.append("\n");
+	} while (textTemp != ".");
 
 	msg.append("SEND\n");
 	msg.append(from);
+	msg.append("\n");
 	msg.append(to);
+	msg.append("\n");
 	msg.append(subject);
+	msg.append("\n");
 	msg.append(text);
+//	msg.append("\n");
 
 	return msg;
 }
 std::string list() {
 
 	std::string msg;
-	char user[9];
+	std::string user;
 
-	std::cout << "Username: ";
-	fgets(user, 9, stdin);
+	//USERNAME
+	do {
+		user = "";
+		std::cout << "Username (max 8 characters): ";
+		getline(std::cin, user);
+
+		if (user.length() > 8) {
+			std::cout << "max 8 characters, please enter an other username!\n";
+		}
+	} while (user.length() > 8);
 
 	msg.append("LIST\n");
 	msg.append(user);
+	msg.append("\n");
 
 	return msg;
 }
 std::string read() {
 
 	std::string msg;
-	char user[9];
-	char nr[20];
+	std::string user;
+	std::string nr;
 
-	std::cout << "Username: ";
-	fgets(user, 9, stdin);
+	//USERNAME
+	do {
+		user = "";
+		std::cout << "Username (max 8 characters): ";
+		getline(std::cin, user);
+
+		if (user.length() > 8) {
+			std::cout << "max 8 characters, please enter an other username!\n";
+		}
+	} while (user.length() > 8);
+
+	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
-	// size??
-	fgets(nr, 20, stdin);
+	getline(std::cin, nr);
 
 	msg.append("READ\n");
 	msg.append(user);
+	msg.append("\n");
 	msg.append(nr);
+	msg.append("\n");
 
 	return msg;
 }
 std::string del() {
 
 	std::string msg;
-	char user[9];
-	char nr[20];
+	std::string user;
+	std::string nr;
 
-	std::cout << "Username: ";
-	fgets(user, 9, stdin);
+	//USERNAME
+	do {
+		user = "";
+		std::cout << "Username (max 8 characters): ";
+		getline(std::cin, user);
+
+		if (user.length() > 8) {
+			std::cout << "max 8 characters, please enter an other username!\n";
+		}
+	} while (user.length() > 8);
+
+	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
-	// size??
-	fgets(nr, 20, stdin);
+	getline(std::cin, nr);
 
 	msg.append("DEL\n");
 	msg.append(user);
+	msg.append("\n");
 	msg.append(nr);
+	msg.append("\n");
 
 	return msg;
+}
+
+void printCommands() {
+	std::cout << "##########################################################\n";
+	std::cout << "####                      COMMANDS                    ####\n";
+	std::cout << "#### s (SEND: send an email)                          ####\n";
+	std::cout << "#### l (LIST: list all email from a user)            #####\n";
+	std::cout << "#### r (READ: read a specific email)                 #####\n";
+	std::cout << "#### d (DEL: delete a specific email                 #####\n";
+	std::cout << "#### q (QUIT: end program)                           #####\n";
+	std::cout << "##########################################################\n";
 }
 
 int main(int argc, char **argv) {
 	int create_socket;
 	char buffer[BUF];
+	std::string command;
 	struct sockaddr_in address;
 	int size;
 	std::stringstream msg;
@@ -108,7 +193,7 @@ int main(int argc, char **argv) {
 
 	memset(&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
-	address.sin_port = htons (PORT);
+	address.sin_port = htons(PORT);
 	inet_aton(argv[1], &address.sin_addr);
 
 	if (connect(create_socket, (struct sockaddr *) &address, sizeof(address))
@@ -124,32 +209,31 @@ int main(int argc, char **argv) {
 		perror("Connect error - no server available");
 		return EXIT_FAILURE;
 	}
-
+	printCommands();
 	do {
-		printf("Command: ");
-		fgets(buffer, BUF, stdin);
-		//buffer[sizeof(buffer)] = '\0';
-		if (strcmp(buffer, "QUIT\n") != 0) {
-			if (strcmp(buffer, "SEND\n") == 0) {
+		command = "";
+		std::cout << "Command: ";
+		getline(std::cin, command);
+
+		if (command != "q") {
+			if (command == "s") {
 				msg << send();
 			}
 
-			if (strcmp(buffer, "LIST\n") == 0) {
+			if (command == "l") {
 				msg << list();
 			}
 
-			if (strcmp(buffer, "READ\n") == 0) {
+			if (command == "r") {
 				msg << read();
 			}
 
-			if (strcmp(buffer, "DEL\n") == 0) {
+			if (command == "d") {
 				std::string msg = del();
-				std::cout << msg << std::endl;
-
 			}
 
 #ifdef _DEBUG
-				std::cout << msg.str();
+			std::cout << msg.str();
 #endif
 
 			if (send(create_socket, msg.str().c_str(), msg.str().size(), 0)
@@ -164,8 +248,7 @@ int main(int argc, char **argv) {
 				printf("%s", buffer);
 			}
 		}
-
-	} while (strcmp(buffer, "QUIT\n") != 0);
+	} while (command != "q");
 	close(create_socket);
 	return EXIT_SUCCESS;
 }
