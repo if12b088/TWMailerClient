@@ -13,6 +13,35 @@
 #define BUF 1024
 #define PORT 6000
 
+std::string login(){
+
+	std::string msg;
+
+	std::string username;
+	std::string password;
+
+	do {
+			username = "";
+			std::cout << "Username (max 8 characters): ";
+			getline(std::cin, username);
+
+			if (username.length() > 8) {
+				std::cout << "max 8 characters, please enter an other username!\n";
+			}
+		} while (username.length() > 8);
+
+	std::cout << "Password: ";
+	getline(std::cin, password);
+
+	msg.append("LOGIN\n");
+    msg.append(username);
+    msg.append("\n");
+    msg.append(password);
+    msg.append("\n");
+
+    return msg;
+}
+
 std::string send() {
 
 	std::string msg;
@@ -162,6 +191,26 @@ std::string del() {
 	return msg;
 }
 
+std::string send(int create_socket, std::string msg){
+
+	char buffer[BUF];
+
+	if (send(create_socket, msg.c_str(), msg.length(), 0)
+			== -1) {
+		perror("Send error");
+		return "EXIT_FAILURE";
+	}
+
+	int size = recv(create_socket, buffer, BUF - 1, 0);
+	if (size > 0) {
+		buffer[size] = '\0';
+		printf("%s", buffer);
+	}
+
+	std::string answer = std::string(buffer);
+	return answer;
+}
+
 void printCommands() {
 	std::cout << "##########################################################\n";
 	std::cout << "####                      COMMANDS                    ####\n";
@@ -180,6 +229,7 @@ int main(int argc, char **argv) {
 	struct sockaddr_in address;
 	int size;
 	std::string msg;
+	std::string resp;
 
 	if (argc < 2) {
 		printf("Usage: %s ServerAdresse\n", argv[0]);
@@ -209,6 +259,17 @@ int main(int argc, char **argv) {
 		perror("Connect error - no server available");
 		return EXIT_FAILURE;
 	}
+
+	do{
+		msg = "";
+		msg = login();
+#ifdef _DEBUG
+			std::cout << msg << std::endl;
+#endif
+		resp = send(create_socket, msg);
+
+	}while(resp != "OK\n");
+
 	printCommands();
 	do {
 		command = "";
@@ -236,18 +297,8 @@ int main(int argc, char **argv) {
 #ifdef _DEBUG
 			std::cout << msg;
 #endif
+			resp = send(create_socket, msg);
 
-			if (send(create_socket, msg.c_str(), msg.length(), 0)
-					== -1) {
-				perror("Send error");
-				return EXIT_FAILURE;
-			}
-
-			size = recv(create_socket, buffer, BUF - 1, 0);
-			if (size > 0) {
-				buffer[size] = '\0';
-				printf("%s", buffer);
-			}
 		}
 	} while (command != "q");
 	close(create_socket);
