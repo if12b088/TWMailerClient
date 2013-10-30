@@ -10,58 +10,97 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <list>
 #define BUF 1024
 #define PORT 6000
 
-std::string login(){
+std::string sendToServer(int create_socket, std::string msg) {
+
+	char buffer[BUF];
+	int size;
+
+	size = send(create_socket, msg.c_str(), msg.length(), 0);
+
+#ifdef _DEBUG
+	std::cout << "Send-size: " << size << std::endl;
+#endif
+
+	if (size == -1) {
+		perror("Send error");
+		return "EXIT_FAILURE";
+	}
+
+	size = recv(create_socket, buffer, BUF - 1, 0);
+	if (size > 0) {
+		buffer[size] = '\0';
+		printf("%s", buffer);
+	}
+
+#ifdef _DEBUG
+	std::cout << "Recv-size: " << size << std::endl;
+#endif
+
+	std::string answer = std::string(buffer);
+	return answer;
+}
+
+std::string login(int create_socket, std::string *user) {
 
 	std::string msg;
+	std::string response;
 
 	std::string username;
 	std::string password;
 
 	do {
-			username = "";
-			std::cout << "Username (max 8 characters): ";
-			getline(std::cin, username);
+		username = "";
+		std::cout << "Username (max 8 characters): ";
+		getline(std::cin, username);
 
-			if (username.length() > 8) {
-				std::cout << "max 8 characters, please enter an other username!\n";
-			}
-		} while (username.length() > 8);
-
-	std::cout << "Password: ";
-	getline(std::cin, password);
+		if (username.length() > 8) {
+			std::cout << "max 8 characters, please enter an other username!\n";
+		}
+	} while (username.length() > 8);
+	password = getpass("Password: ");
+//	std::cout << "Password: ";
+	//getline(std::cin, password);
 
 	msg.append("LOGIN\n");
-    msg.append(username);
-    msg.append("\n");
-    msg.append(password);
-    msg.append("\n");
+	msg.append(username);
+	msg.append("\n");
+	msg.append(password);
+	msg.append("\n");
 
-    return msg;
+	*user = username;
+
+	response = sendToServer(create_socket, msg);
+
+	return msg;
 }
 
-std::string send() {
+std::string send(int create_socket, std::string username) {
 
 	std::string msg;
+	std::string response;
 
-	std::string from;
+//	std::string from;
 	std::string to;
 	std::string toTemp;
 	std::string subject;
 	std::string text;
 	std::string textTemp;
+	std::string fileName;
+	std::list<std::string> fileNameList;
 	//FROM
-	do {
-		from = "";
-		std::cout << "From (max 8 characters): ";
-		getline(std::cin, from);
-
-		if (from.length() > 8) {
-			std::cout << "max 8 characters, please enter an other sender!\n";
-		}
-	} while (from.length() > 8);
+//	do {
+//		from = "";
+//		std::cout << "From (max 8 characters): ";
+//		getline(std::cin, from);
+//
+//		if (from.length() > 8) {
+//			std::cout << "max 8 characters, please enter an other sender!\n";
+//		}
+//	} while (from.length() > 8);
 
 	//TO
 	do {
@@ -75,7 +114,7 @@ std::string send() {
 			if (toTemp != "") {
 				to.append(toTemp);
 				to.append(";");
- 			}
+			}
 
 		}
 	} while (toTemp != "");
@@ -98,127 +137,145 @@ std::string send() {
 		text.append("\n");
 	} while (textTemp != ".");
 
+	do {
+		std::cout << "Attachment: ";
+		fileName = "";
+		getline(std::cin, fileName);
+		if (fileName != "") {
+			fileNameList.push_back(fileName);
+		}
+	} while (fileName != "");
+
 	msg.append("SEND\n");
-	msg.append(from);
+	//msg.append(from);
+	msg.append(username);
 	msg.append("\n");
 	msg.append(to);
 	msg.append("\n");
 	msg.append(subject);
 	msg.append("\n");
 	msg.append(text);
-//	msg.append("\n");
+
+	if (fileNameList.size() > 0) {
+		msg.append("ATT\n");
+		msg.append(std::to_string(fileNameList.size()));
+		msg.append("\n");
+
+		for (std::list<std::string>::const_iterator i = fileNameList.begin();
+				i != fileNameList.end(); ++i) {
+			msg.append(i->c_str());
+			msg.append("\n");
+		}
+	}
+
+	response = sendToServer(create_socket, msg);
 
 	return msg;
 }
-std::string list() {
+std::string list(int create_socket, std::string username) {
 
 	std::string msg;
-	std::string user;
+	std::string response;
+
+	//std::string user;
 
 	//USERNAME
-	do {
-		user = "";
-		std::cout << "Username (max 8 characters): ";
-		getline(std::cin, user);
-
-		if (user.length() > 8) {
-			std::cout << "max 8 characters, please enter an other username!\n";
-		}
-	} while (user.length() > 8);
+//	do {
+//		user = "";
+//		std::cout << "Username (max 8 characters): ";
+//		getline(std::cin, user);
+//
+//		if (user.length() > 8) {
+//			std::cout << "max 8 characters, please enter an other username!\n";
+//		}
+//	} while (user.length() > 8);
 
 	msg.append("LIST\n");
-	msg.append(user);
+	//msg.append(user);
+	msg.append(username);
 	msg.append("\n");
+
+	response = sendToServer(create_socket, msg);
 
 	return msg;
 }
-std::string read() {
+std::string read(int create_socket, std::string username) {
 
 	std::string msg;
-	std::string user;
+	std::string response;
+
+	//std::string user;
 	std::string nr;
 
 	//USERNAME
-	do {
-		user = "";
-		std::cout << "Username (max 8 characters): ";
-		getline(std::cin, user);
-
-		if (user.length() > 8) {
-			std::cout << "max 8 characters, please enter an other username!\n";
-		}
-	} while (user.length() > 8);
+//	do {
+//		user = "";
+//		std::cout << "Username (max 8 characters): ";
+//		getline(std::cin, user);
+//
+//		if (user.length() > 8) {
+//			std::cout << "max 8 characters, please enter an other username!\n";
+//		}
+//	} while (user.length() > 8);
 
 	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
 	getline(std::cin, nr);
 
 	msg.append("READ\n");
-	msg.append(user);
+	//msg.append(user);
+	msg.append(username);
 	msg.append("\n");
 	msg.append(nr);
 	msg.append("\n");
 
+	response = sendToServer(create_socket, msg);
+
 	return msg;
 }
-std::string del() {
+std::string del(int create_socket, std::string username) {
 
 	std::string msg;
-	std::string user;
+	std::string response;
+
+	//std::string user;
 	std::string nr;
 
 	//USERNAME
-	do {
-		user = "";
-		std::cout << "Username (max 8 characters): ";
-		getline(std::cin, user);
-
-		if (user.length() > 8) {
-			std::cout << "max 8 characters, please enter an other username!\n";
-		}
-	} while (user.length() > 8);
+//	do {
+//		user = "";
+//		std::cout << "Username (max 8 characters): ";
+//		getline(std::cin, user);
+//
+//		if (user.length() > 8) {
+//			std::cout << "max 8 characters, please enter an other username!\n";
+//		}
+//	} while (user.length() > 8);
 
 	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
 	getline(std::cin, nr);
 
 	msg.append("DEL\n");
-	msg.append(user);
+	//msg.append(user);
+	msg.append(username);
 	msg.append("\n");
 	msg.append(nr);
 	msg.append("\n");
 
+	response = sendToServer(create_socket, msg);
+
 	return msg;
-}
-
-std::string send(int create_socket, std::string msg){
-
-	char buffer[BUF];
-
-	if (send(create_socket, msg.c_str(), msg.length(), 0)
-			== -1) {
-		perror("Send error");
-		return "EXIT_FAILURE";
-	}
-
-	int size = recv(create_socket, buffer, BUF - 1, 0);
-	if (size > 0) {
-		buffer[size] = '\0';
-		printf("%s", buffer);
-	}
-
-	std::string answer = std::string(buffer);
-	return answer;
 }
 
 void printCommands() {
 	std::cout << "##########################################################\n";
 	std::cout << "####                      COMMANDS                    ####\n";
 	std::cout << "#### s (SEND: send an email)                          ####\n";
-	std::cout << "#### l (LIST: list all email from a user)            #####\n";
-	std::cout << "#### r (READ: read a specific email)                 #####\n";
-	std::cout << "#### d (DEL: delete a specific email                 #####\n";
-	std::cout << "#### q (QUIT: end program)                           #####\n";
+	std::cout << "#### l (LIST: list all email from a user)             ####\n";
+	std::cout << "#### r (READ: read a specific email)                  ####\n";
+	std::cout << "#### d (DEL : delete a specific email                 ####\n";
+	std::cout << "#### q (QUIT: end program)                            ####\n";
 	std::cout << "##########################################################\n";
 }
 
@@ -229,7 +286,8 @@ int main(int argc, char **argv) {
 	struct sockaddr_in address;
 	int size;
 	std::string msg;
-	std::string resp;
+	std::string response;
+	std::string username;
 
 	if (argc < 2) {
 		printf("Usage: %s ServerAdresse\n", argv[0]);
@@ -260,15 +318,25 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 
-	do{
+	do {
 		msg = "";
-		msg = login();
-#ifdef _DEBUG
-			std::cout << msg << std::endl;
-#endif
-		resp = send(create_socket, msg);
+		msg = login(create_socket, &username);
 
-	}while(resp != "OK\n");
+#ifdef _DEBUG
+		std::cout << msg << std::endl;
+#endif
+
+		response = sendToServer(create_socket, msg);
+
+#ifdef _DEBUG
+		//std::cout << "response: " << response << std::endl;
+#endif
+
+#ifdef _DEBUG
+		//std::cout << "user: " << username << std::endl;
+#endif
+
+	} while (response != "OK\n");
 
 	printCommands();
 	do {
@@ -279,25 +347,24 @@ int main(int argc, char **argv) {
 
 		if (command != "q") {
 			if (command == "s") {
-				msg = send();
+				msg = send(create_socket, username);
 			}
 
 			if (command == "l") {
-				msg = list();
+				msg = list(create_socket, username);
 			}
 
 			if (command == "r") {
-				msg = read();
+				msg = read(create_socket, username);
 			}
 
 			if (command == "d") {
-				std::string msg = del();
+				msg = del(create_socket, username);
 			}
 
 #ifdef _DEBUG
-			std::cout << msg;
+			std::cout << msg << std::endl;
 #endif
-			resp = send(create_socket, msg);
 
 		}
 	} while (command != "q");
