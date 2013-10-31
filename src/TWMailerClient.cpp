@@ -18,6 +18,7 @@ std::string sendToServer(int create_socket, std::string msg) {
 
 	char buffer[BUF];
 	int size;
+	buffer[0] = '\0';
 
 	size = send(create_socket, msg.c_str(), msg.length(), 0);
 
@@ -72,10 +73,10 @@ std::string login(int create_socket, std::string *user) {
 	msg.append("\n");
 
 	*user = username;
-
+	response = "";
 	response = sendToServer(create_socket, msg);
 
-	return msg;
+	return response;
 }
 
 std::string send(int create_socket, std::string username) {
@@ -155,12 +156,10 @@ std::string send(int create_socket, std::string username) {
 	msg.append(subject);
 	msg.append("\n");
 	msg.append(text);
+	msg.append(std::to_string(fileNameList.size()));
+	msg.append("\n");
 
 	if (fileNameList.size() > 0) {
-		msg.append("ATT\n");
-		msg.append(std::to_string(fileNameList.size()));
-		msg.append("\n");
-
 		for (std::list<std::string>::const_iterator i = fileNameList.begin();
 				i != fileNameList.end(); ++i) {
 			msg.append(i->c_str());
@@ -319,14 +318,14 @@ int main(int argc, char **argv) {
 	}
 
 	do {
-		msg = "";
-		msg = login(create_socket, &username);
+		response = "";
+		response = login(create_socket, &username);
 
 #ifdef _DEBUG
 		std::cout << msg << std::endl;
 #endif
 
-		response = sendToServer(create_socket, msg);
+		//response = sendToServer(create_socket, msg);
 
 #ifdef _DEBUG
 		//std::cout << "response: " << response << std::endl;
@@ -335,6 +334,11 @@ int main(int argc, char **argv) {
 #ifdef _DEBUG
 		//std::cout << "user: " << username << std::endl;
 #endif
+
+		if (response == "BAN\n") {
+			std::cout << "To many tries, you have been baned!\n" << std::endl;
+			exit(EXIT_SUCCESS);
+		}
 
 	} while (response != "OK\n");
 
