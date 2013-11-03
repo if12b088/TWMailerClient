@@ -47,29 +47,41 @@ std::string sendToServer(int create_socket, std::string msg) {
 	return answer;
 }
 
-//bool sendFileToServer(int create_socket, std::ifstream file) {
-//
-//	file.seekg(0, std::ios::beg);
-//	while (file.tellg() != -1) {
-//		char *p = new char[BUF];
-//
-//		bzero(p, BUF);
-//		file.read(p, BUF);
-//
-//		printf("%ld\n", file.gcount());
-//
-//		int n = send(create_socket, p, BUF, 0);
-//		if (n < 0) {
-//			std::cerr << "ERROR writing to socket" << std::endl;
-//			return false;
-//		} else {
-//			printf("---------%d\n", n);
-//		}
-//
-//		delete p;
-//	}
-//	return true;
-//}
+bool sendFileToServer(int create_socket, std::ifstream* file,
+		long long fileSize) {
+
+	file->seekg(0, std::ios::beg);
+	int toRead = 0;
+	while (fileSize > 0) {
+#ifdef _DEBUG
+		std::cout << "begin sending file" << std:: endl;
+#endif
+		if (fileSize > BUF) {
+			toRead = BUF;
+		} else {
+			toRead = fileSize;
+		}
+		char *p = new char[toRead];
+
+		bzero(p, toRead);
+		file->read(p, toRead);
+
+		printf("%ld\n", file->gcount());
+
+		int n = send(create_socket, p, toRead, 0);
+
+		if (n < 0) {
+			std::cerr << "ERROR writing to socket" << std::endl;
+			return false;
+		} else {
+			printf("---------%d\n", n);
+		}
+		fileSize -= n;
+
+		delete p;
+	}
+	return true;
+}
 
 std::string login(int create_socket, std::string *user) {
 
@@ -117,7 +129,7 @@ std::string send(int create_socket, std::string username) {
 	std::string text;
 	std::string textTemp;
 	std::string fileName;
-	int fileSize;
+	long long fileSize;
 //	std::list<std::string> fileNameList;
 	std::ifstream file;
 
@@ -220,7 +232,8 @@ std::string send(int create_socket, std::string username) {
 	msg.append(std::to_string(fileSize));
 	msg.append("\n");
 	if (fileName != "") {
-		msg.append(fileName);
+		int pos = fileName.find_last_of("/");
+		msg.append(fileName.substr(pos + 1, fileName.length()));
 		msg.append("\n");
 	}
 
@@ -228,36 +241,10 @@ std::string send(int create_socket, std::string username) {
 	response = sendToServer(create_socket, msg);
 
 	// Send Attachments
-	//sendFileToServer(create_socket, file);
-
-	file.seekg(0, std::ios::beg);
-	while (file.tellg() != -1) {
-#ifdef _DEBUG
-		std::cout << "begin sending file" << std:: endl;
-#endif
-		char *p = new char[BUF];
-
-		bzero(p, BUF);
-		file.read(p, BUF);
-
-		printf("%ld\n", file.gcount());
-
-		int n = send(create_socket, p, BUF, 0);
-
-		if (n < 0) {
-			std::cerr << "ERROR writing to socket" << std::endl;
-			//return false;
-		} else {
-			printf("---------%d\n", n);
-		}
-
-		delete p;
+	if (fileSize != 0) {
+		sendFileToServer(create_socket, &file, fileSize);
+		file.close();
 	}
-	file.close();
-
-#ifdef _DEBUG
-	//std::cout << msg << std::endl;
-#endif
 	return msg;
 }
 std::string list(int create_socket, std::string username) {
@@ -363,7 +350,8 @@ std::string sendDebug(int create_socket, std::string username) {
 
 	std::string to = "if12b046";
 	std::string subject = "Hallo es kommt gleich ein file";
-	std::string text = "Das ist der Text zu dem File\nDer Text ist aber nicht sehr spannend\n.\n";
+	std::string text =
+			"Das ist der Text zu dem File\nDer Text ist aber nicht sehr spannend\n.\n";
 	std::string fileName = "file1.txt";
 	int fileSize;
 	std::ifstream file;
@@ -378,7 +366,6 @@ std::string sendDebug(int create_socket, std::string username) {
 			fileSize = file.tellg();
 			file.seekg(0, std::ios::beg);
 			std::cout << "FileSize: " << fileSize << std::endl;
-
 
 		} else {
 			std::cerr << "File not open" << std::endl;
@@ -405,32 +392,10 @@ std::string sendDebug(int create_socket, std::string username) {
 	response = sendToServer(create_socket, msg);
 
 	// Send Attachments
-	//sendFileToServer(create_socket, file);
-
-	file.seekg(0, std::ios::beg);
-	while (file.tellg() != -1) {
-#ifdef _DEBUG
-		std::cout << "begin sending file" << std:: endl;
-#endif
-		char *p = new char[BUF];
-
-		bzero(p, BUF);
-		file.read(p, BUF);
-
-		printf("%ld\n", file.gcount());
-
-		int n = send(create_socket, p, BUF, 0);
-
-		if (n < 0) {
-			std::cerr << "ERROR writing to socket" << std::endl;
-			//return false;
-		} else {
-			printf("---------%d\n", n);
-		}
-
-		delete p;
+	if (fileSize != 0) {
+		sendFileToServer(create_socket, &file, fileSize);
+		file.close();
 	}
-	file.close();
 
 #ifdef _DEBUG
 	//std::cout << msg << std::endl;
