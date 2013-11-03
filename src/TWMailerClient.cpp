@@ -10,7 +10,9 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <list>
+#include <sys/stat.h>
 #define BUF 1024
 #define PORT 6000
 
@@ -23,7 +25,7 @@ std::string sendToServer(int create_socket, std::string msg) {
 	size = send(create_socket, msg.c_str(), msg.length(), 0);
 
 #ifdef _DEBUG
-	std::cout << "Send-size: " << size << std::endl;
+	//std::cout << "Send-size: " << size << std::endl;
 #endif
 
 	if (size == -1) {
@@ -34,16 +36,40 @@ std::string sendToServer(int create_socket, std::string msg) {
 	size = recv(create_socket, buffer, BUF - 1, 0);
 	if (size > 0) {
 		buffer[size] = '\0';
-		printf("%s", buffer);
+
 	}
 
 #ifdef _DEBUG
-	std::cout << "Recv-size: " << size << std::endl;
+	//std::cout << "Recv-size: " << size << std::endl;
 #endif
 
 	std::string answer = std::string(buffer);
 	return answer;
 }
+
+//bool sendFileToServer(int create_socket, std::ifstream file) {
+//
+//	file.seekg(0, std::ios::beg);
+//	while (file.tellg() != -1) {
+//		char *p = new char[BUF];
+//
+//		bzero(p, BUF);
+//		file.read(p, BUF);
+//
+//		printf("%ld\n", file.gcount());
+//
+//		int n = send(create_socket, p, BUF, 0);
+//		if (n < 0) {
+//			std::cerr << "ERROR writing to socket" << std::endl;
+//			return false;
+//		} else {
+//			printf("---------%d\n", n);
+//		}
+//
+//		delete p;
+//	}
+//	return true;
+//}
 
 std::string login(int create_socket, std::string *user) {
 
@@ -91,7 +117,10 @@ std::string send(int create_socket, std::string username) {
 	std::string text;
 	std::string textTemp;
 	std::string fileName;
-	std::list<std::string> fileNameList;
+	int fileSize;
+//	std::list<std::string> fileNameList;
+	std::ifstream file;
+
 	//FROM
 //	do {
 //		from = "";
@@ -138,14 +167,46 @@ std::string send(int create_socket, std::string username) {
 		text.append("\n");
 	} while (textTemp != ".");
 
-	do {
-		std::cout << "Attachment: ";
-		fileName = "";
-		getline(std::cin, fileName);
-		if (fileName != "") {
-			fileNameList.push_back(fileName);
+	//Muti ATT
+//	do {
+//		std::cout << "Attachment: ";
+//		fileName = "";
+//		getline(std::cin, fileName);
+//		if (fileName != "") {
+//			fileNameList.push_back(fileName);
+//		}
+//	} while (fileName != "");
+
+	std::cout << "Attachment: ";
+	fileName = "";
+	getline(std::cin, fileName);
+
+	if (fileName == "") {
+		fileSize = 0;
+	} else {
+		file.open(fileName.c_str(), std::ios::binary);
+		//std::ifstream file;
+		//file.open(fileName, std::ios::binary);
+
+		if (file.is_open()) {
+			file.seekg(0, std::ios::end);
+			fileSize = file.tellg();
+			file.seekg(0, std::ios::beg);
+			std::cout << "FileSize: " << fileSize << std::endl;
+
+//			struct stat results;
+//			int fileSizeStat = 0;
+//
+//			stat(fileName.c_str(), &results);
+//			fileSizeStat = results.st_size;
+//
+//			std::cout << "FileSize form stat: " << fileSizeStat << std::endl;
+
+		} else {
+			std::cerr << "File not open" << std::endl;
 		}
-	} while (fileName != "");
+
+	}
 
 	msg.append("SEND\n");
 	//msg.append(from);
@@ -156,19 +217,47 @@ std::string send(int create_socket, std::string username) {
 	msg.append(subject);
 	msg.append("\n");
 	msg.append(text);
-	msg.append(std::to_string(fileNameList.size()));
+	msg.append(std::to_string(fileSize));
 	msg.append("\n");
-
-	if (fileNameList.size() > 0) {
-		for (std::list<std::string>::const_iterator i = fileNameList.begin();
-				i != fileNameList.end(); ++i) {
-			msg.append(i->c_str());
-			msg.append("\n");
-		}
+	if (fileName != "") {
+		msg.append(fileName);
+		msg.append("\n");
 	}
 
+	// Send Protokoll
 	response = sendToServer(create_socket, msg);
 
+	// Send Attachments
+	//sendFileToServer(create_socket, file);
+
+	file.seekg(0, std::ios::beg);
+	while (file.tellg() != -1) {
+#ifdef _DEBUG
+		std::cout << "begin sending file" << std:: endl;
+#endif
+		char *p = new char[BUF];
+
+		bzero(p, BUF);
+		file.read(p, BUF);
+
+		printf("%ld\n", file.gcount());
+
+		int n = send(create_socket, p, BUF, 0);
+
+		if (n < 0) {
+			std::cerr << "ERROR writing to socket" << std::endl;
+			//return false;
+		} else {
+			printf("---------%d\n", n);
+		}
+
+		delete p;
+	}
+	file.close();
+
+#ifdef _DEBUG
+	//std::cout << msg << std::endl;
+#endif
 	return msg;
 }
 std::string list(int create_socket, std::string username) {
@@ -267,6 +356,88 @@ std::string del(int create_socket, std::string username) {
 	return msg;
 }
 
+std::string sendDebug(int create_socket, std::string username) {
+
+	std::string msg;
+	std::string response;
+
+	std::string to = "if12b046";
+	std::string subject = "Hallo es kommt gleich ein file";
+	std::string text = "Das ist der Text zu dem File\nDer Text ist aber nicht sehr spannend\n.\n";
+	std::string fileName = "file1.txt";
+	int fileSize;
+	std::ifstream file;
+
+	if (fileName == "") {
+		fileSize = 0;
+	} else {
+		file.open(fileName.c_str(), std::ios::binary);
+
+		if (file.is_open()) {
+			file.seekg(0, std::ios::end);
+			fileSize = file.tellg();
+			file.seekg(0, std::ios::beg);
+			std::cout << "FileSize: " << fileSize << std::endl;
+
+
+		} else {
+			std::cerr << "File not open" << std::endl;
+		}
+
+	}
+
+	msg.append("SEND\n");
+	msg.append(username);
+	msg.append("\n");
+	msg.append(to);
+	msg.append("\n");
+	msg.append(subject);
+	msg.append("\n");
+	msg.append(text);
+	msg.append(std::to_string(fileSize));
+	msg.append("\n");
+	if (fileName != "") {
+		msg.append(fileName);
+		msg.append("\n");
+	}
+
+	// Send Protokoll
+	response = sendToServer(create_socket, msg);
+
+	// Send Attachments
+	//sendFileToServer(create_socket, file);
+
+	file.seekg(0, std::ios::beg);
+	while (file.tellg() != -1) {
+#ifdef _DEBUG
+		std::cout << "begin sending file" << std:: endl;
+#endif
+		char *p = new char[BUF];
+
+		bzero(p, BUF);
+		file.read(p, BUF);
+
+		printf("%ld\n", file.gcount());
+
+		int n = send(create_socket, p, BUF, 0);
+
+		if (n < 0) {
+			std::cerr << "ERROR writing to socket" << std::endl;
+			//return false;
+		} else {
+			printf("---------%d\n", n);
+		}
+
+		delete p;
+	}
+	file.close();
+
+#ifdef _DEBUG
+	//std::cout << msg << std::endl;
+#endif
+	return msg;
+}
+
 void printCommands() {
 	std::cout << "##########################################################\n";
 	std::cout << "####                      COMMANDS                    ####\n";
@@ -352,18 +523,16 @@ int main(int argc, char **argv) {
 		if (command != "q") {
 			if (command == "s") {
 				msg = send(create_socket, username);
-			}
-
-			if (command == "l") {
+			} else if (command == "l") {
 				msg = list(create_socket, username);
-			}
-
-			if (command == "r") {
+			} else if (command == "r") {
 				msg = read(create_socket, username);
-			}
-
-			if (command == "d") {
+			} else if (command == "d") {
 				msg = del(create_socket, username);
+			} else if (command == "w") {
+				msg = sendDebug(create_socket, username);
+			} else {
+				std::cout << "unknown command!" << std::endl;
 			}
 
 #ifdef _DEBUG
