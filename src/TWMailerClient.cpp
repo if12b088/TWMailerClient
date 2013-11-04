@@ -13,14 +13,16 @@
 #include <fstream>
 #include <list>
 #include <sys/stat.h>
+#include "Helper.h"
 #define BUF 1024
 #define PORT 6000
 
-std::string sendToServer(int create_socket, std::string msg) {
+void sendProtocol(int create_socket, std::string msg) {
 
 	char buffer[BUF];
 	int size;
-	buffer[0] = '\0';
+	bzero(buffer, BUF);
+	//buffer[0] = '\0';
 
 	size = send(create_socket, msg.c_str(), msg.length(), 0);
 
@@ -30,24 +32,24 @@ std::string sendToServer(int create_socket, std::string msg) {
 
 	if (size == -1) {
 		perror("Send error");
-		return "EXIT_FAILURE";
+		return;
 	}
+	return;
+}
+
+std::string receiveProtocol(int create_socket) {
+	char buffer[BUF];
+	int size;
+	bzero(buffer, BUF);
 
 	size = recv(create_socket, buffer, BUF - 1, 0);
 	if (size > 0) {
 		buffer[size] = '\0';
 
 	}
-#ifdef _DEBUG
-	//std::cout << "buffer: " << buffer << std::endl;
-#endif
+	std::string response = std::string(buffer);
 
-#ifdef _DEBUG
-	//std::cout << "Recv-size: " << size << std::endl;
-#endif
-
-	std::string answer = std::string(buffer);
-	return answer;
+	return response;
 }
 
 bool sendFileToServer(int create_socket, std::ifstream* file,
@@ -56,9 +58,7 @@ bool sendFileToServer(int create_socket, std::ifstream* file,
 	file->seekg(0, std::ios::beg);
 	int toRead = 0;
 	while (fileSize > 0) {
-#ifdef _DEBUG
-		std::cout << "begin sending file" << std:: endl;
-#endif
+
 		if (fileSize > BUF) {
 			toRead = BUF;
 		} else {
@@ -113,9 +113,16 @@ std::string login(int create_socket, std::string *user) {
 	msg.append(password);
 	msg.append("\n");
 
+	//Username nach aussen uebergeben
 	*user = username;
+
+#ifdef _DEBUG
+	std::cout << msg << std::endl;
+#endif
+
 	response = "";
-	response = sendToServer(create_socket, msg);
+	sendProtocol(create_socket, msg);
+	response = receiveProtocol(create_socket);
 
 	return response;
 }
@@ -125,7 +132,6 @@ std::string send(int create_socket, std::string username) {
 	std::string msg;
 	std::string response;
 
-//	std::string from;
 	std::string to;
 	std::string toTemp;
 	std::string subject;
@@ -199,7 +205,6 @@ std::string send(int create_socket, std::string username) {
 		} else {
 			std::cerr << "File not open" << std::endl;
 		}
-
 	}
 
 	msg.append("SEND\n");
@@ -218,15 +223,25 @@ std::string send(int create_socket, std::string username) {
 		msg.append("\n");
 	}
 
-	// Send Protokoll
-	response = sendToServer(create_socket, msg);
+	// Send Protocol
+	sendProtocol(create_socket, msg);
 
 	// Send Attachments
 	if (fileSize != 0) {
 		sendFileToServer(create_socket, &file, fileSize);
 		file.close();
 	}
-	return msg;
+
+	//Receive Protocol
+	response = receiveProtocol(create_socket);
+
+	if(response == "OK\n"){
+		std::cout << "Message has been sent successfully" << std::endl;
+	}else{
+		std::cout << "There was an error sending the message" << std::endl;
+	}
+
+	return response;
 }
 std::string list(int create_socket, std::string username) {
 
@@ -234,11 +249,27 @@ std::string list(int create_socket, std::string username) {
 	std::string response;
 
 	msg.append("LIST\n");
-	//msg.append(user);
 	msg.append(username);
 	msg.append("\n");
 
-	response = sendToServer(create_socket, msg);
+	// Send Protocol
+	sendProtocol(create_socket, msg);
+
+	//Receive Protocol
+	char countListChar[BUF];
+	Helper::readline(create_socket, countListChar, BUF - 1);
+	int countList = atoi(countListChar);
+	response.append(countListChar);
+	//Get all list elements
+	while(countList != 0){
+		char responseChar[BUF];
+		Helper::readline(create_socket, responseChar, BUF - 1);
+		response.append(std::string(responseChar));
+		countList--;
+	}
+
+	//AUSGABE
+	std::cout << response << std::endl;
 
 	return response;
 }
@@ -259,7 +290,13 @@ std::string read(int create_socket, std::string username) {
 	msg.append(nr);
 	msg.append("\n");
 
-	response = sendToServer(create_socket, msg);
+	// Send Protocol
+	sendProtocol(create_socket, msg);
+	//Receive Protocol
+	response = receiveProtocol(create_socket);
+
+	//AUSGABE
+	std::cout << response << std::endl;
 
 	return response;
 }
@@ -275,17 +312,22 @@ std::string del(int create_socket, std::string username) {
 	getline(std::cin, nr);
 
 	msg.append("DEL\n");
-	//msg.append(user);
 	msg.append(username);
 	msg.append("\n");
 	msg.append(nr);
 	msg.append("\n");
 
-	response = sendToServer(create_socket, msg);
+	// Send Protocol
+	sendProtocol(create_socket, msg);
+	//Receive Protocol
+	response = receiveProtocol(create_socket);
+
+	//AUSGABE
+	std::cout << response << std::endl;
 
 	return response;
 }
-
+//TODO delete
 std::string sendDebug(int create_socket, std::string username) {
 
 	std::string msg;
@@ -313,7 +355,6 @@ std::string sendDebug(int create_socket, std::string username) {
 		} else {
 			std::cerr << "File not open" << std::endl;
 		}
-
 	}
 
 	msg.append("SEND\n");
@@ -331,15 +372,17 @@ std::string sendDebug(int create_socket, std::string username) {
 		msg.append("\n");
 	}
 
-	// Send Protokoll
-	response = sendToServer(create_socket, msg);
+	// Send Protocol
+	sendProtocol(create_socket, msg);
+	//Receive Protocol
+	response = receiveProtocol(create_socket);
 
 	// Send Attachments
 	if (fileSize != 0) {
 		sendFileToServer(create_socket, &file, fileSize);
 		file.close();
 	}
-	return msg;
+	return response;
 }
 
 void printCommands() {
@@ -393,22 +436,9 @@ int main(int argc, char **argv) {
 	}
 
 	do {
+		// LOGIN
 		response = "";
 		response = login(create_socket, &username);
-
-#ifdef _DEBUG
-		std::cout << msg << std::endl;
-#endif
-
-		//response = sendToServer(create_socket, msg);
-
-#ifdef _DEBUG
-		//std::cout << "response: " << response << std::endl;
-#endif
-
-#ifdef _DEBUG
-		//std::cout << "user: " << username << std::endl;
-#endif
 
 		if (response == "BAN\n") {
 			std::cout << "To many tries, you have been baned!\n" << std::endl;
@@ -418,29 +448,33 @@ int main(int argc, char **argv) {
 	} while (response != "OK\n");
 
 	printCommands();
+
+	//start Command block
 	do {
 		command = "";
 		std::cout << "Command: ";
 		msg = "";
+
+		//read Command
 		getline(std::cin, command);
 
 		if (command != "q") {
 			if (command == "s") {
-				msg = send(create_socket, username);
+				send(create_socket, username);
 			} else if (command == "l") {
-				msg = list(create_socket, username);
+				list(create_socket, username);
 			} else if (command == "r") {
-				msg = read(create_socket, username);
+				read(create_socket, username);
 			} else if (command == "d") {
-				msg = del(create_socket, username);
+				del(create_socket, username);
 			} else if (command == "w") {
-				msg = sendDebug(create_socket, username);
+				sendDebug(create_socket, username);
 			} else {
 				std::cout << "unknown command!" << std::endl;
 			}
 
 #ifdef _DEBUG
-			std::cout << msg << std::endl;
+			//std::cout << msg << std::endl;
 #endif
 
 		}
