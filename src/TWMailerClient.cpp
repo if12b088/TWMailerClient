@@ -38,6 +38,9 @@ std::string sendToServer(int create_socket, std::string msg) {
 		buffer[size] = '\0';
 
 	}
+#ifdef _DEBUG
+	//std::cout << "buffer: " << buffer << std::endl;
+#endif
 
 #ifdef _DEBUG
 	//std::cout << "Recv-size: " << size << std::endl;
@@ -133,17 +136,6 @@ std::string send(int create_socket, std::string username) {
 //	std::list<std::string> fileNameList;
 	std::ifstream file;
 
-	//FROM
-//	do {
-//		from = "";
-//		std::cout << "From (max 8 characters): ";
-//		getline(std::cin, from);
-//
-//		if (from.length() > 8) {
-//			std::cout << "max 8 characters, please enter an other sender!\n";
-//		}
-//	} while (from.length() > 8);
-
 	//TO
 	do {
 
@@ -197,22 +189,12 @@ std::string send(int create_socket, std::string username) {
 		fileSize = 0;
 	} else {
 		file.open(fileName.c_str(), std::ios::binary);
-		//std::ifstream file;
-		//file.open(fileName, std::ios::binary);
 
 		if (file.is_open()) {
 			file.seekg(0, std::ios::end);
 			fileSize = file.tellg();
 			file.seekg(0, std::ios::beg);
 			std::cout << "FileSize: " << fileSize << std::endl;
-
-//			struct stat results;
-//			int fileSizeStat = 0;
-//
-//			stat(fileName.c_str(), &results);
-//			fileSizeStat = results.st_size;
-//
-//			std::cout << "FileSize form stat: " << fileSizeStat << std::endl;
 
 		} else {
 			std::cerr << "File not open" << std::endl;
@@ -221,7 +203,6 @@ std::string send(int create_socket, std::string username) {
 	}
 
 	msg.append("SEND\n");
-	//msg.append(from);
 	msg.append(username);
 	msg.append("\n");
 	msg.append(to);
@@ -252,19 +233,6 @@ std::string list(int create_socket, std::string username) {
 	std::string msg;
 	std::string response;
 
-	//std::string user;
-
-	//USERNAME
-//	do {
-//		user = "";
-//		std::cout << "Username (max 8 characters): ";
-//		getline(std::cin, user);
-//
-//		if (user.length() > 8) {
-//			std::cout << "max 8 characters, please enter an other username!\n";
-//		}
-//	} while (user.length() > 8);
-
 	msg.append("LIST\n");
 	//msg.append(user);
 	msg.append(username);
@@ -272,33 +240,20 @@ std::string list(int create_socket, std::string username) {
 
 	response = sendToServer(create_socket, msg);
 
-	return msg;
+	return response;
 }
 std::string read(int create_socket, std::string username) {
 
 	std::string msg;
 	std::string response;
 
-	//std::string user;
 	std::string nr;
-
-	//USERNAME
-//	do {
-//		user = "";
-//		std::cout << "Username (max 8 characters): ";
-//		getline(std::cin, user);
-//
-//		if (user.length() > 8) {
-//			std::cout << "max 8 characters, please enter an other username!\n";
-//		}
-//	} while (user.length() > 8);
 
 	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
 	getline(std::cin, nr);
 
 	msg.append("READ\n");
-	//msg.append(user);
 	msg.append(username);
 	msg.append("\n");
 	msg.append(nr);
@@ -306,26 +261,14 @@ std::string read(int create_socket, std::string username) {
 
 	response = sendToServer(create_socket, msg);
 
-	return msg;
+	return response;
 }
 std::string del(int create_socket, std::string username) {
 
 	std::string msg;
 	std::string response;
 
-	//std::string user;
 	std::string nr;
-
-	//USERNAME
-//	do {
-//		user = "";
-//		std::cout << "Username (max 8 characters): ";
-//		getline(std::cin, user);
-//
-//		if (user.length() > 8) {
-//			std::cout << "max 8 characters, please enter an other username!\n";
-//		}
-//	} while (user.length() > 8);
 
 	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
@@ -340,7 +283,7 @@ std::string del(int create_socket, std::string username) {
 
 	response = sendToServer(create_socket, msg);
 
-	return msg;
+	return response;
 }
 
 std::string sendDebug(int create_socket, std::string username) {
@@ -396,10 +339,6 @@ std::string sendDebug(int create_socket, std::string username) {
 		sendFileToServer(create_socket, &file, fileSize);
 		file.close();
 	}
-
-#ifdef _DEBUG
-	//std::cout << msg << std::endl;
-#endif
 	return msg;
 }
 
