@@ -127,7 +127,7 @@ std::string login(int create_socket, std::string *user) {
 	return response;
 }
 
-std::string send(int create_socket, std::string username) {
+std::string send(int create_socket) {
 
 	std::string msg;
 	std::string response;
@@ -208,8 +208,8 @@ std::string send(int create_socket, std::string username) {
 	}
 
 	msg.append("SEND\n");
-	msg.append(username);
-	msg.append("\n");
+	//msg.append(username);
+	//msg.append("\n");
 	msg.append(to);
 	msg.append("\n");
 	msg.append(subject);
@@ -243,14 +243,14 @@ std::string send(int create_socket, std::string username) {
 
 	return response;
 }
-std::string list(int create_socket, std::string username) {
+std::string list(int create_socket) {
 
 	std::string msg;
 	std::string response;
 
 	msg.append("LIST\n");
-	msg.append(username);
-	msg.append("\n");
+	//msg.append(username);
+	//msg.append("\n");
 
 	// Send Protocol
 	sendProtocol(create_socket, msg);
@@ -273,7 +273,7 @@ std::string list(int create_socket, std::string username) {
 
 	return response;
 }
-std::string read(int create_socket, std::string username) {
+std::string read(int create_socket) {
 
 	std::string msg;
 	std::string response;
@@ -285,8 +285,8 @@ std::string read(int create_socket, std::string username) {
 	getline(std::cin, nr);
 
 	msg.append("READ\n");
-	msg.append(username);
-	msg.append("\n");
+	//msg.append(username);
+	//msg.append("\n");
 	msg.append(nr);
 	msg.append("\n");
 
@@ -300,7 +300,7 @@ std::string read(int create_socket, std::string username) {
 
 	return response;
 }
-std::string del(int create_socket, std::string username) {
+std::string del(int create_socket) {
 
 	std::string msg;
 	std::string response;
@@ -312,8 +312,8 @@ std::string del(int create_socket, std::string username) {
 	getline(std::cin, nr);
 
 	msg.append("DEL\n");
-	msg.append(username);
-	msg.append("\n");
+	//msg.append(username);
+	//msg.append("\n");
 	msg.append(nr);
 	msg.append("\n");
 
@@ -328,7 +328,7 @@ std::string del(int create_socket, std::string username) {
 	return response;
 }
 //TODO delete
-std::string sendDebug(int create_socket, std::string username) {
+std::string sendDebug(int create_socket) {
 
 	std::string msg;
 	std::string response;
@@ -358,8 +358,8 @@ std::string sendDebug(int create_socket, std::string username) {
 	}
 
 	msg.append("SEND\n");
-	msg.append(username);
-	msg.append("\n");
+	//msg.append(username);
+	//msg.append("\n");
 	msg.append(to);
 	msg.append("\n");
 	msg.append(subject);
@@ -460,15 +460,15 @@ int main(int argc, char **argv) {
 
 		if (command != "q") {
 			if (command == "s") {
-				send(create_socket, username);
+				send(create_socket);
 			} else if (command == "l") {
-				list(create_socket, username);
+				list(create_socket);
 			} else if (command == "r") {
-				read(create_socket, username);
+				read(create_socket);
 			} else if (command == "d") {
-				del(create_socket, username);
+				del(create_socket);
 			} else if (command == "w") {
-				sendDebug(create_socket, username);
+				sendDebug(create_socket);
 			} else {
 				std::cout << "unknown command!" << std::endl;
 			}
