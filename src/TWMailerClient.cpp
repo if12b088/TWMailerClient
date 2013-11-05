@@ -358,6 +358,9 @@ std::string read(int create_socket) {
 
 	} while (lastChar != '\n' || textTempStr.compare(".\n") != 0);
 
+	response.append("Text    : ");
+	response.append(text);
+
 	//ReadFile
 
 	if (fileSize != 0) {
@@ -366,10 +369,12 @@ std::string read(int create_socket) {
 		int toRead;
 		char* pos = file;
 
-		while (fileSize > 0) {
+		long tempSize = fileSize;
 
-			if (fileSize < BUF) {
-				toRead = fileSize;
+		while (tempSize > 0) {
+
+			if (tempSize < BUF) {
+				toRead = tempSize;
 			} else {
 				toRead = BUF;
 			}
@@ -381,7 +386,7 @@ std::string read(int create_socket) {
 			memcpy(pos, readBuffer, toRead);
 			//std::cout << readBuffer << std::endl;
 			pos += toRead;
-			fileSize -= toRead;
+			tempSize -= toRead;
 		}
 		//write file
 		std::stringstream attachmentPath;
