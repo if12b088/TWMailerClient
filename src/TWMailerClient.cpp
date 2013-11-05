@@ -117,7 +117,7 @@ std::string login(int create_socket, std::string *user) {
 	*user = username;
 
 #ifdef _DEBUG
-	std::cout << msg << std::endl;
+	//std::cout << msg << std::endl;
 #endif
 
 	response = "";
@@ -200,7 +200,9 @@ std::string send(int create_socket) {
 			file.seekg(0, std::ios::end);
 			fileSize = file.tellg();
 			file.seekg(0, std::ios::beg);
+#ifdef _DEBUG
 			std::cout << "FileSize: " << fileSize << std::endl;
+#endif
 
 		} else {
 			std::cerr << "File not open" << std::endl;
@@ -223,7 +225,9 @@ std::string send(int create_socket) {
 
 	// Send Protocol
 	sendProtocol(create_socket, msg);
-
+#ifdef _DEBUG
+	std::cout << msg << std::endl;
+#endif
 	// Send Attachments
 	if (fileSize != 0) {
 		sendFileToServer(create_socket, &file, fileSize);
@@ -288,26 +292,50 @@ std::string read(int create_socket) {
 	sendProtocol(create_socket, msg);
 
 	//Receive Protocol
+
 	//msgNr
 	char msgNrChar[BUF];
 	Helper::readline(create_socket, msgNrChar, BUF - 1);
 	response.append("Msg-Nr  : ");
 	response.append(msgNrChar);
+
 	//from
 	char fromChar[BUF];
 	Helper::readline(create_socket, fromChar, BUF - 1);
 	response.append("From    : ");
 	response.append(fromChar);
-	//from
+
+	//to
 	char toChar[BUF];
 	Helper::readline(create_socket, toChar, BUF - 1);
 	response.append("To      : ");
 	response.append(toChar);
 
-	//ATT and/or Text
+	//subject
+	char subjectChar[BUF];
+	Helper::readline(create_socket, subjectChar, BUF - 1);
+	response.append("Subject : ");
+	response.append(subjectChar);
 
+	//fileSize
 	long long fileSize = 0;
 	std::string fileName;
+
+	char fileSizeChar[BUF];
+	Helper::readline(create_socket, fileSizeChar, BUF - 1);
+	response.append("FileSize: ");
+	response.append(fileSizeChar);
+	fileSize = atoll(fileSizeChar);
+	if (fileSize > 0) {
+	//FileName
+		char fileNameChar[BUF];
+		Helper::readline(create_socket, fileNameChar, BUF - 1);
+		response.append("FileName: ");
+		response.append(fileNameChar);
+		fileName = Helper::removeNewline(std::string(fileNameChar));
+	}
+
+	//Text
 	char textTempChar[BUF];
 	std::string textTempStr;
 	std::string text;
@@ -321,27 +349,13 @@ std::string read(int create_socket) {
 		textTempChar[0] = '\0';
 		sizeText = Helper::readline(create_socket, textTempChar,
 		BUF - 1);
-		//Attachment
-		if (strcmp(textTempChar, "ATT\n") == 0) {
-			//FileName
-			char fileNameChar[BUF];
-			Helper::readline(create_socket, fileNameChar, BUF - 1);
-			response.append("FileName: ");
-			response.append(fileNameChar);
-			fileName = Helper::removeNewline(std::string(fileNameChar));
-			//Size
-			char fileSizeChar[BUF];
-			Helper::readline(create_socket, fileSizeChar, BUF - 1);
-			response.append("FileSize: ");
-			response.append(fileSizeChar);
-			fileSize = atoi(fileSizeChar);
-		}
 
 		textTempStr = std::string(textTempChar);
 
 		if (lastChar != '\n' || textTempStr.compare(".\n") != 0) {
 			text.append(textTempStr);
 		}
+
 	} while (lastChar != '\n' || textTempStr.compare(".\n") != 0);
 
 	//ReadFile
@@ -373,7 +387,7 @@ std::string read(int create_socket) {
 		std::stringstream attachmentPath;
 		attachmentPath << fileName;
 		std::ofstream outfile(attachmentPath.str(), std::ofstream::binary);
-		outfile.write(file,fileSize);
+		outfile.write(file, fileSize);
 		outfile.close();
 	}
 	//response = receiveProtocol(create_socket);
@@ -508,6 +522,10 @@ int main(int argc, char **argv) {
 		if (size > 0) {
 			buffer[size] = '\0';
 			printf("%s", buffer);
+			if (strcmp(buffer, "BANNED\n") == 0) {
+				std::cout << "Your IP is Blocked\n" << std::endl;
+				exit(EXIT_SUCCESS);
+			}
 		}
 	} else {
 		perror("Connect error - no server available");
@@ -515,7 +533,7 @@ int main(int argc, char **argv) {
 	}
 
 	do {
-		// LOGIN
+// LOGIN
 		response = "";
 		response = login(create_socket, &username);
 
@@ -523,7 +541,6 @@ int main(int argc, char **argv) {
 			std::cout << "To many tries, you have been baned!\n" << std::endl;
 			exit(EXIT_SUCCESS);
 		}
-
 	} while (response != "OK\n");
 
 	printCommands();
