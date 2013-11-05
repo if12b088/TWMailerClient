@@ -208,8 +208,6 @@ std::string send(int create_socket) {
 	}
 
 	msg.append("SEND\n");
-	//msg.append(username);
-	//msg.append("\n");
 	msg.append(to);
 	msg.append("\n");
 	msg.append(subject);
@@ -235,9 +233,9 @@ std::string send(int create_socket) {
 	//Receive Protocol
 	response = receiveProtocol(create_socket);
 
-	if(response == "OK\n"){
+	if (response == "OK\n") {
 		std::cout << "Message has been sent successfully" << std::endl;
-	}else{
+	} else {
 		std::cout << "There was an error sending the message" << std::endl;
 	}
 
@@ -249,8 +247,6 @@ std::string list(int create_socket) {
 	std::string response;
 
 	msg.append("LIST\n");
-	//msg.append(username);
-	//msg.append("\n");
 
 	// Send Protocol
 	sendProtocol(create_socket, msg);
@@ -261,7 +257,7 @@ std::string list(int create_socket) {
 	int countList = atoi(countListChar);
 	response.append(countListChar);
 	//Get all list elements
-	while(countList != 0){
+	while (countList != 0) {
 		char responseChar[BUF];
 		Helper::readline(create_socket, responseChar, BUF - 1);
 		response.append(std::string(responseChar));
@@ -285,15 +281,102 @@ std::string read(int create_socket) {
 	getline(std::cin, nr);
 
 	msg.append("READ\n");
-	//msg.append(username);
-	//msg.append("\n");
 	msg.append(nr);
 	msg.append("\n");
 
 	// Send Protocol
 	sendProtocol(create_socket, msg);
+
 	//Receive Protocol
-	response = receiveProtocol(create_socket);
+	//msgNr
+	char msgNrChar[BUF];
+	Helper::readline(create_socket, msgNrChar, BUF - 1);
+	response.append("Msg-Nr  : ");
+	response.append(msgNrChar);
+	//from
+	char fromChar[BUF];
+	Helper::readline(create_socket, fromChar, BUF - 1);
+	response.append("From    : ");
+	response.append(fromChar);
+	//from
+	char toChar[BUF];
+	Helper::readline(create_socket, toChar, BUF - 1);
+	response.append("To      : ");
+	response.append(toChar);
+
+	//ATT and/or Text
+
+	long long fileSize = 0;
+	std::string fileName;
+	char textTempChar[BUF];
+	std::string textTempStr;
+	std::string text;
+	char lastChar = 0;
+	int sizeText = 1;
+
+	do {
+		lastChar = textTempStr[sizeText - 1];
+
+		textTempStr = "";
+		textTempChar[0] = '\0';
+		sizeText = Helper::readline(create_socket, textTempChar,
+		BUF - 1);
+		//Attachment
+		if (strcmp(textTempChar, "ATT\n") == 0) {
+			//FileName
+			char fileNameChar[BUF];
+			Helper::readline(create_socket, fileNameChar, BUF - 1);
+			response.append("FileName: ");
+			response.append(fileNameChar);
+			fileName = Helper::removeNewline(std::string(fileNameChar));
+			//Size
+			char fileSizeChar[BUF];
+			Helper::readline(create_socket, fileSizeChar, BUF - 1);
+			response.append("FileSize: ");
+			response.append(fileSizeChar);
+			fileSize = atoi(fileSizeChar);
+		}
+
+		textTempStr = std::string(textTempChar);
+
+		if (lastChar != '\n' || textTempStr.compare(".\n") != 0) {
+			text.append(textTempStr);
+		}
+	} while (lastChar != '\n' || textTempStr.compare(".\n") != 0);
+
+	//ReadFile
+
+	if (fileSize != 0) {
+		char* file = new char[fileSize];
+		bzero(file, fileSize);
+		int toRead;
+		char* pos = file;
+
+		while (fileSize > 0) {
+
+			if (fileSize < BUF) {
+				toRead = fileSize;
+			} else {
+				toRead = BUF;
+			}
+			char readBuffer[toRead];
+			bzero(readBuffer, toRead);
+
+			recv(create_socket, readBuffer, toRead, 0);
+
+			memcpy(pos, readBuffer, toRead);
+			//std::cout << readBuffer << std::endl;
+			pos += toRead;
+			fileSize -= toRead;
+		}
+		//write file
+		std::stringstream attachmentPath;
+		attachmentPath << fileName;
+		std::ofstream outfile(attachmentPath.str(), std::ofstream::binary);
+		outfile.write(file,fileSize);
+		outfile.close();
+	}
+	//response = receiveProtocol(create_socket);
 
 	//AUSGABE
 	std::cout << response << std::endl;
@@ -312,8 +395,6 @@ std::string del(int create_socket) {
 	getline(std::cin, nr);
 
 	msg.append("DEL\n");
-	//msg.append(username);
-	//msg.append("\n");
 	msg.append(nr);
 	msg.append("\n");
 
@@ -358,8 +439,6 @@ std::string sendDebug(int create_socket) {
 	}
 
 	msg.append("SEND\n");
-	//msg.append(username);
-	//msg.append("\n");
 	msg.append(to);
 	msg.append("\n");
 	msg.append(subject);
