@@ -26,10 +26,6 @@ void sendProtocol(int create_socket, std::string msg) {
 
 	size = send(create_socket, msg.c_str(), msg.length(), 0);
 
-#ifdef _DEBUG
-	//std::cout << "Send-size: " << size << std::endl;
-#endif
-
 	if (size == -1) {
 		perror("Send error");
 		return;
@@ -57,6 +53,8 @@ bool sendFileToServer(int create_socket, std::ifstream* file,
 
 	file->seekg(0, std::ios::beg);
 	int toRead = 0;
+	int sendSize;
+	char blockOK[2];
 	while (fileSize > 0) {
 
 		if (fileSize > BUF) {
@@ -69,17 +67,20 @@ bool sendFileToServer(int create_socket, std::ifstream* file,
 		bzero(p, toRead);
 		file->read(p, toRead);
 
-		printf("%ld\n", file->gcount());
+		do {
+			sendSize = send(create_socket, p, toRead, 0);
+			recv(create_socket, blockOK, 2, 0);
+			if (strcmp(blockOK, "Y") != 0) {
+				printf("blockOK: %s\n", blockOK);
+			}
+		} while (strcmp(blockOK, "Y") != 0);
 
-		int n = send(create_socket, p, toRead, 0);
-
-		if (n < 0) {
+		if (sendSize < 0) {
 			std::cerr << "ERROR writing to socket" << std::endl;
 			return false;
-		} else {
-			printf("---------%d\n", n);
 		}
-		fileSize -= n;
+
+		fileSize -= sendSize;
 
 		delete p;
 	}
@@ -104,8 +105,6 @@ std::string login(int create_socket, std::string *user) {
 		}
 	} while (username.length() > 8);
 	password = getpass("Password: ");
-//	std::cout << "Password: ";
-	//getline(std::cin, password);
 
 	msg.append("LOGIN\n");
 	msg.append(username);
@@ -115,10 +114,6 @@ std::string login(int create_socket, std::string *user) {
 
 	//Username nach aussen uebergeben
 	*user = username;
-
-#ifdef _DEBUG
-	//std::cout << msg << std::endl;
-#endif
 
 	response = "";
 	sendProtocol(create_socket, msg);
@@ -139,7 +134,6 @@ std::string send(int create_socket) {
 	std::string textTemp;
 	std::string fileName;
 	long long fileSize;
-//	std::list<std::string> fileNameList;
 	std::ifstream file;
 
 	//TO
@@ -176,16 +170,6 @@ std::string send(int create_socket) {
 		text.append(textTemp);
 		text.append("\n");
 	} while (textTemp != ".");
-
-	//Muti ATT
-//	do {
-//		std::cout << "Attachment: ";
-//		fileName = "";
-//		getline(std::cin, fileName);
-//		if (fileName != "") {
-//			fileNameList.push_back(fileName);
-//		}
-//	} while (fileName != "");
 
 	std::cout << "Attachment: ";
 	fileName = "";
@@ -327,7 +311,7 @@ std::string read(int create_socket) {
 	response.append(fileSizeChar);
 	fileSize = atoll(fileSizeChar);
 	if (fileSize > 0) {
-	//FileName
+		//FileName
 		char fileNameChar[BUF];
 		Helper::readline(create_socket, fileNameChar, BUF - 1);
 		response.append("FileName: ");
@@ -368,8 +352,9 @@ std::string read(int create_socket) {
 		bzero(file, fileSize);
 		int toRead;
 		char* pos = file;
-
-		long tempSize = fileSize;
+		int readSize;
+		long long tempSize = fileSize;
+		std::string blockOK;
 
 		while (tempSize > 0) {
 
@@ -381,12 +366,20 @@ std::string read(int create_socket) {
 			char readBuffer[toRead];
 			bzero(readBuffer, toRead);
 
-			recv(create_socket, readBuffer, toRead, 0);
+			do {
+				readSize = recv(create_socket, readBuffer, toRead, 0);
 
-			memcpy(pos, readBuffer, toRead);
-			//std::cout << readBuffer << std::endl;
-			pos += toRead;
-			tempSize -= toRead;
+				if (readSize == toRead) {
+					blockOK = "Y";
+				} else {
+					blockOK = "N";
+				}
+				send(create_socket, blockOK.c_str(), 2, 0);
+			} while (readSize != toRead);
+
+			memcpy(pos, readBuffer, readSize);
+			pos += readSize;
+			tempSize -= readSize;
 		}
 		//write file
 		std::stringstream attachmentPath;
@@ -395,7 +388,6 @@ std::string read(int create_socket) {
 		outfile.write(file, fileSize);
 		outfile.close();
 	}
-	//response = receiveProtocol(create_socket);
 
 	//AUSGABE
 	std::cout << response << std::endl;
@@ -425,61 +417,6 @@ std::string del(int create_socket) {
 	//AUSGABE
 	std::cout << response << std::endl;
 
-	return response;
-}
-//TODO delete
-std::string sendDebug(int create_socket) {
-
-	std::string msg;
-	std::string response;
-
-	std::string to = "if12b046";
-	std::string subject = "Hallo es kommt gleich ein file";
-	std::string text =
-			"Das ist der Text zu dem File\nDer Text ist aber nicht sehr spannend\n.\n";
-	std::string fileName = "file1.txt";
-	int fileSize;
-	std::ifstream file;
-
-	if (fileName == "") {
-		fileSize = 0;
-	} else {
-		file.open(fileName.c_str(), std::ios::binary);
-
-		if (file.is_open()) {
-			file.seekg(0, std::ios::end);
-			fileSize = file.tellg();
-			file.seekg(0, std::ios::beg);
-			std::cout << "FileSize: " << fileSize << std::endl;
-
-		} else {
-			std::cerr << "File not open" << std::endl;
-		}
-	}
-
-	msg.append("SEND\n");
-	msg.append(to);
-	msg.append("\n");
-	msg.append(subject);
-	msg.append("\n");
-	msg.append(text);
-	msg.append(std::to_string(fileSize));
-	msg.append("\n");
-	if (fileName != "") {
-		msg.append(fileName);
-		msg.append("\n");
-	}
-
-	// Send Protocol
-	sendProtocol(create_socket, msg);
-	//Receive Protocol
-	response = receiveProtocol(create_socket);
-
-	// Send Attachments
-	if (fileSize != 0) {
-		sendFileToServer(create_socket, &file, fileSize);
-		file.close();
-	}
 	return response;
 }
 
@@ -568,16 +505,9 @@ int main(int argc, char **argv) {
 				read(create_socket);
 			} else if (command == "d") {
 				del(create_socket);
-			} else if (command == "w") {
-				sendDebug(create_socket);
 			} else {
 				std::cout << "unknown command!" << std::endl;
 			}
-
-#ifdef _DEBUG
-			//std::cout << msg << std::endl;
-#endif
-
 		}
 	} while (command != "q");
 	close(create_socket);
