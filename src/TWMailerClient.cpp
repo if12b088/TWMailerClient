@@ -52,23 +52,23 @@ bool sendFileToServer(int create_socket, std::ifstream* file,
 		long long fileSize) {
 
 	file->seekg(0, std::ios::beg);
-	int toRead = 0;
+	int toSend = 0;
 	int sendSize;
 	char blockOK[2];
 	while (fileSize > 0) {
 
 		if (fileSize > BUF) {
-			toRead = BUF;
+			toSend = BUF;
 		} else {
-			toRead = fileSize;
+			toSend = fileSize;
 		}
-		char *p = new char[toRead];
+		char *p = new char[toSend];
 
-		bzero(p, toRead);
-		file->read(p, toRead);
+		bzero(p, toSend);
+		file->read(p, toSend);
 
 		do {
-			sendSize = send(create_socket, p, toRead, 0);
+			sendSize = send(create_socket, p, toSend, 0);
 			recv(create_socket, blockOK, 2, 0);
 			if (strcmp(blockOK, "Y") != 0) {
 				printf("blockOK: %s\n", blockOK);
@@ -346,7 +346,6 @@ std::string read(int create_socket) {
 	response.append(text);
 
 	//ReadFile
-
 	if (fileSize != 0) {
 		char* file = new char[fileSize];
 		bzero(file, fileSize);
