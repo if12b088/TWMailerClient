@@ -19,6 +19,7 @@
 #include <fstream>
 #include <list>
 #include <sys/stat.h>
+#include <algorithm>
 #include "Helper.h"
 #include "CommandHandler.h"
 
@@ -277,7 +278,12 @@ void CommandHandler::read() {
 	std::cout << "Message-Number: ";
 	getline(std::cin, nr);
 	if (nr.length() == 0) {
-		std::cout << "no Message-Numer given!" << std::endl;
+		std::cout << "Keine Message Nummer eingegeben!" << std::endl;
+		return;
+	}
+
+	if (nr.find_first_not_of("0123456789") != std::string::npos) {
+		std::cout << "Der eingegebene Wert ist keine gueltige Zahl!" << std::endl;
 		return;
 	}
 
@@ -427,6 +433,15 @@ void CommandHandler::del() {
 	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
 	getline(std::cin, nr);
+	if (nr.length() == 0) {
+		std::cout << "Keine Message Nummer eingegeben!" << std::endl;
+		return;
+	}
+
+	if (nr.find_first_not_of("0123456789") != std::string::npos) {
+		std::cout << "Der eingegebene Wert ist keine gueltige Zahl!" << std::endl;
+		return;
+	}
 
 	msg.append("DEL\n");
 	msg.append(nr);

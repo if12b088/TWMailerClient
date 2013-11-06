@@ -20,6 +20,7 @@ CommandHandler.o: CommandHandler.cpp CommandHandler.h
 
 clean: 
 	rm -f *.o
+	rm -f TWMailerClient
 
 dist:
 	mkdir TWMailerClient-${VERSION}
