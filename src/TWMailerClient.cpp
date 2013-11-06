@@ -148,7 +148,7 @@ void send(int create_socket) {
 			if (toTemp.length() > 0) {
 				to.append(toTemp);
 				to.append(";");
-			}else if(toTemp.length() == 0 && to.length() == 0) {
+			} else if (toTemp.length() == 0 && to.length() == 0) {
 				std::cout << "no recipient choosen!" << std::endl;
 				return;
 			}
@@ -161,7 +161,7 @@ void send(int create_socket) {
 		getline(std::cin, subject);
 		if (subject.length() > 80) {
 			std::cout << "Subject is too long, max 80 characters!\n";
-		}else if(subject.length() == 0){
+		} else if (subject.length() == 0) {
 			subject = "[NO SUBJECT]";
 		}
 	} while (subject.length() > 80);
@@ -272,6 +272,10 @@ void read(int create_socket) {
 	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
 	getline(std::cin, nr);
+	if (nr.length() == 0) {
+		std::cout << "no Message-Numer given!" << std::endl;
+		return;
+	}
 
 	msg.append("READ\n");
 	msg.append(nr);
@@ -408,6 +412,11 @@ void del(int create_socket) {
 	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
 	getline(std::cin, nr);
+
+	if (nr.length() == 0) {
+		std::cout << "no Message-Numer given!" << std::endl;
+		return;
+	}
 
 	msg.append("DEL\n");
 	msg.append(nr);
