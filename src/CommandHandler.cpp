@@ -157,9 +157,12 @@ void CommandHandler::sendCommand() {
 		if (toTemp.length() > 8) {
 			std::cout << "max 8 characters, please enter an other recipient!\n";
 		} else {
-			if (toTemp != "") {
+			if (toTemp.length() > 0) {
 				to.append(toTemp);
 				to.append(";");
+			} else if (toTemp.length() == 0 && to.length() == 0) {
+				std::cout << "no recipient choosen!" << std::endl;
+				return;
 			}
 
 		}
@@ -171,6 +174,8 @@ void CommandHandler::sendCommand() {
 		getline(std::cin, subject);
 		if (subject.length() > 80) {
 			std::cout << "Subject is too long, max 80 characters!\n";
+		} else if (subject.length() == 0) {
+			subject = "[NO SUBJECT]";
 		}
 	} while (subject.length() > 80);
 
@@ -198,6 +203,7 @@ void CommandHandler::sendCommand() {
 			file.seekg(0, std::ios::beg);
 		} else {
 			std::cerr << "File not open" << std::endl;
+			return;
 		}
 	}
 
@@ -270,6 +276,10 @@ void CommandHandler::read() {
 	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
 	getline(std::cin, nr);
+	if (nr.length() == 0) {
+		std::cout << "no Message-Numer given!" << std::endl;
+		return;
+	}
 
 	msg.append("READ\n");
 	msg.append(nr);
@@ -392,7 +402,6 @@ void CommandHandler::read() {
 			pos += readSize;
 			tempSize -= readSize;
 		}
-
 
 		//write file
 		std::stringstream attachmentPath;
