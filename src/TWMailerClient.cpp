@@ -272,6 +272,7 @@ void read(int create_socket) {
 	//MESSAGE-NUMBER
 	std::cout << "Message-Number: ";
 	getline(std::cin, nr);
+
 	if (nr.length() == 0) {
 		std::cout << "no Message-Numer given!" << std::endl;
 		return;
