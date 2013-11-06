@@ -122,7 +122,7 @@ std::string login(int create_socket, std::string *user) {
 	return response;
 }
 
-std::string send(int create_socket) {
+void send(int create_socket) {
 
 	std::string msg;
 	std::string response;
@@ -145,13 +145,15 @@ std::string send(int create_socket) {
 		if (toTemp.length() > 8) {
 			std::cout << "max 8 characters, please enter an other recipient!\n";
 		} else {
-			if (toTemp != "") {
+			if (toTemp.length() > 0) {
 				to.append(toTemp);
 				to.append(";");
+			}else if(toTemp.length() == 0 && to.length() == 0) {
+				std::cout << "no recipient choosen!" << std::endl;
+				return;
 			}
-
 		}
-	} while (toTemp != "");
+	} while (toTemp.length() != 0);
 
 	// SUBJECT
 	do {
@@ -159,6 +161,8 @@ std::string send(int create_socket) {
 		getline(std::cin, subject);
 		if (subject.length() > 80) {
 			std::cout << "Subject is too long, max 80 characters!\n";
+		}else if(subject.length() == 0){
+			subject = "[NO SUBJECT]";
 		}
 	} while (subject.length() > 80);
 
@@ -190,6 +194,7 @@ std::string send(int create_socket) {
 
 		} else {
 			std::cerr << "File not open" << std::endl;
+			return;
 		}
 	}
 
@@ -227,9 +232,9 @@ std::string send(int create_socket) {
 		std::cout << "There was an error sending the message" << std::endl;
 	}
 
-	return response;
+	return;
 }
-std::string list(int create_socket) {
+void list(int create_socket) {
 
 	std::string msg;
 	std::string response;
@@ -255,9 +260,9 @@ std::string list(int create_socket) {
 	//AUSGABE
 	std::cout << response << std::endl;
 
-	return response;
+	return;
 }
-std::string read(int create_socket) {
+void read(int create_socket) {
 
 	std::string msg;
 	std::string response;
@@ -391,9 +396,9 @@ std::string read(int create_socket) {
 	//AUSGABE
 	std::cout << response << std::endl;
 
-	return response;
+	return;
 }
-std::string del(int create_socket) {
+void del(int create_socket) {
 
 	std::string msg;
 	std::string response;
@@ -416,7 +421,7 @@ std::string del(int create_socket) {
 	//AUSGABE
 	std::cout << response << std::endl;
 
-	return response;
+	return;
 }
 
 void printCommands() {
